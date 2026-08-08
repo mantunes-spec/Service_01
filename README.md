@@ -42,15 +42,21 @@ Detalhe em `packages/backend/src/`:
 
 ## Como correr (desenvolvimento)
 
-Pré-requisito: Node 20+.
+Pré-requisito: Node 20+ e um PostgreSQL local.
 
 ```bash
 npm install
 
-# criar a base de dados SQLite (uma vez)
+# 1) Postgres local (exemplo com Docker)
+docker run --name service01-db -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=service01 -p 5432:5432 -d postgres:16
+
+# 2) configurar ambiente
+cp packages/backend/.env.example packages/backend/.env   # ajusta DATABASE_URL se necessário
+
+# 3) criar o schema na base de dados
 npm run db:setup
 
-# arrancar backend (:4000) e frontend (:5173)
+# 4) arrancar backend (:4000) e frontend (:5173)
 npm run dev:backend    # num terminal
 npm run dev:frontend   # noutro terminal
 ```
@@ -67,6 +73,29 @@ AI_PROVIDER=claude
 ANTHROPIC_API_KEY=...
 ANTHROPIC_MODEL=claude-sonnet-5
 ```
+
+## Pôr online (deploy no Render)
+
+O repositório inclui um `render.yaml` (Blueprint) que descreve todo o deploy:
+um web service (o backend serve também o frontend compilado, no mesmo domínio)
+e uma base de dados PostgreSQL gerida.
+
+Passos, pelo dashboard (sem terminal):
+
+1. Cria conta em https://render.com com **Sign in with GitHub** e autoriza acesso
+   ao repositório.
+2. **New +** → **Blueprint** → escolhe este repositório e a branch.
+3. O Render lê o `render.yaml`, mostra o que vai criar → **Apply**.
+4. Ao fim de alguns minutos, o web service fica com um URL público. É a app online.
+5. Cada `git push` faz redeploy automático.
+
+Notas:
+- Em produção o `DATABASE_URL` é injetado a partir da base de dados do Render.
+- O Postgres do plano gratuito do Render expira ao fim de ~30 dias; para uso
+  contínuo, sobe de plano.
+- Uploads de ficheiros vão para disco efémero (perdem-se em cada redeploy).
+  Para os manter, adiciona um disco persistente no Render ou migra para object
+  storage — o campo `fileRef` já isola o local de armazenamento.
 
 ## Escalar depois (decisões deixadas prontas)
 

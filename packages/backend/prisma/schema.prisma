@@ -1,16 +1,18 @@
-// Prisma schema — SQLite para arrancar.
-// Migrar para Postgres = trocar `provider` e a DATABASE_URL; os modelos ficam.
+// Prisma schema — PostgreSQL.
 //
-// Nota: SQLite não tem tipo array. Campos "lista" (tags, sourceItemIds,
-// objectives, outcomes, e o content do blueprint) são guardados como JSON
-// (string) e serializados/desserializados na camada de mapeamento do backend.
+// Nota: campos "lista" (tags, sourceItemIds, objectives, outcomes e o content
+// do blueprint) são guardados como JSON serializado em colunas de texto, para
+// manter a camada de mapeamento igual independentemente da base de dados.
+//
+// Dev local: aponta a DATABASE_URL para um Postgres local (ver README).
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
