@@ -1,0 +1,21 @@
+node_modules/
+dist/
+build/
+*.log
+
+# Prisma / SQLite
+packages/backend/prisma/*.db
+packages/backend/prisma/*.db-journal
+
+# Uploaded research files (local storage)
+packages/backend/storage/
+
+# Env
+.env
+.env.local
+*.local
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/

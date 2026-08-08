@@ -1,0 +1,138 @@
+:root {
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --ink: #1a1d24;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --brand: #2f4bff;
+  --brand-soft: #eef1ff;
+  --ok: #17864a;
+  --ok-soft: #e7f6ee;
+  --warn: #9a6a00;
+  --warn-soft: #fdf3dd;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+}
+a { color: var(--brand); text-decoration: none; }
+h1, h2, h3 { margin: 0 0 0.4em; line-height: 1.25; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: 1rem; }
+p { margin: 0 0 0.6em; }
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.5em 0.9em;
+  border-radius: 8px;
+  transition: background 0.12s, border-color 0.12s;
+}
+button:hover { border-color: #cbd0d8; }
+button.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+button.primary:hover { background: #2438d8; }
+button.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+button.danger { color: #b42318; border-color: #f1c9c4; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.small { padding: 0.3em 0.6em; font-size: 0.85rem; }
+
+input, textarea, select {
+  font: inherit;
+  width: 100%;
+  padding: 0.5em 0.65em;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+}
+textarea { resize: vertical; min-height: 70px; }
+label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25em; }
+.field { margin-bottom: 0.9rem; }
+
+.container { max-width: 1080px; margin: 0 auto; padding: 1.5rem; }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+}
+.row { display: flex; gap: 0.6rem; align-items: center; }
+.row.wrap { flex-wrap: wrap; }
+.spread { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.muted { color: var(--muted); }
+.stack > * + * { margin-top: 0.6rem; }
+
+/* Cabeçalho de projeto + navegação de fases */
+.topbar {
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  padding: 0.8rem 1.5rem;
+}
+.phasenav { display: flex; gap: 0.25rem; flex-wrap: wrap; margin-top: 0.6rem; }
+.phasenav a {
+  padding: 0.45em 0.9em;
+  border-radius: 999px;
+  color: var(--muted);
+  border: 1px solid transparent;
+  font-size: 0.9rem;
+}
+.phasenav a.active { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+.phasenav a .num {
+  display: inline-block; width: 1.4em; height: 1.4em; line-height: 1.4em;
+  text-align: center; border-radius: 50%; background: var(--line);
+  margin-right: 0.4em; font-size: 0.8rem;
+}
+.phasenav a.active .num { background: var(--brand); color: #fff; }
+
+/* Badges */
+.badge {
+  display: inline-block; font-size: 0.72rem; font-weight: 600;
+  padding: 0.15em 0.6em; border-radius: 999px; vertical-align: middle;
+}
+.badge.ai { background: var(--brand-soft); color: var(--brand); }
+.badge.draft { background: var(--warn-soft); color: var(--warn); }
+.badge.validated { background: var(--ok-soft); color: var(--ok); }
+.badge.grounded { background: var(--ok-soft); color: var(--ok); }
+.badge.inferred { background: var(--warn-soft); color: var(--warn); }
+.badge.key { background: #eef1f5; color: #333; font-family: ui-monospace, monospace; }
+
+.card {
+  border: 1px solid var(--line); border-radius: 8px; padding: 0.8rem 0.9rem;
+  background: #fff;
+}
+.card.draft { border-left: 3px solid var(--warn); }
+.card.validated { border-left: 3px solid var(--ok); }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+
+.chiplist { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.chip {
+  background: #eef1f5; border-radius: 999px; padding: 0.15em 0.6em; font-size: 0.8rem;
+}
+
+/* Blueprint / swimlanes */
+.blueprint-scroll { overflow-x: auto; }
+table.blueprint { border-collapse: collapse; width: 100%; min-width: 640px; }
+table.blueprint th, table.blueprint td {
+  border: 1px solid var(--line); padding: 0.4rem; vertical-align: top;
+}
+table.blueprint th { background: #f0f2f6; text-align: left; font-size: 0.85rem; }
+table.blueprint td.lane-label { background: #f7f8fa; font-weight: 600; width: 150px; }
+table.blueprint textarea { min-height: 48px; border: none; padding: 0.3rem; }
+
+.empty { text-align: center; color: var(--muted); padding: 2rem; }
+.error { background: #fdeceb; color: #b42318; padding: 0.6rem 0.9rem; border-radius: 8px; }
+.help { background: var(--brand-soft); color: #33407a; padding: 0.7rem 0.9rem; border-radius: 8px; font-size: 0.9rem; }

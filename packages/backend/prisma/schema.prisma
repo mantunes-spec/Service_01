@@ -1,0 +1,124 @@
+// Prisma schema — SQLite para arrancar.
+// Migrar para Postgres = trocar `provider` e a DATABASE_URL; os modelos ficam.
+//
+// Nota: SQLite não tem tipo array. Campos "lista" (tags, sourceItemIds,
+// objectives, outcomes, e o content do blueprint) são guardados como JSON
+// (string) e serializados/desserializados na camada de mapeamento do backend.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id           String   @id @default(cuid())
+  name         String
+  currentPhase Int      @default(1)
+
+  // Fase 1 — Definição
+  clientName       String  @default("")
+  clientContact    String?
+  clientNotes      String?
+  objectives       String  @default("[]") // JSON string[]
+  expectedOutcomes String  @default("[]") // JSON string[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  researchItems ResearchItem[]
+  themes        Theme[]
+  insights      Insight[]
+  gaps          ResearchGap[]
+  artefacts     Artefact[]
+}
+
+model ResearchItem {
+  id          String   @id @default(cuid())
+  projectId   String
+  citationKey String
+  type        String // note | interview | document
+  title       String
+  sourceKind  String // pasted_text | file
+  content     String?
+  fileName    String?
+  fileRef     String?
+  mimeType    String?
+  fileSize    Int?
+  tags        String   @default("[]") // JSON string[]
+  author      String?
+  capturedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Theme {
+  id            String   @id @default(cuid())
+  projectId     String
+  label         String
+  description   String   @default("")
+  sourceItemIds String   @default("[]") // JSON string[]
+  origin        String   @default("ai") // manual | ai
+  status        String   @default("draft") // draft | validated
+  validatedAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Insight {
+  id            String   @id @default(cuid())
+  projectId     String
+  text          String
+  themeId       String?
+  sourceItemIds String   @default("[]") // JSON string[]
+  confidence    String   @default("grounded") // grounded | inferred
+  origin        String   @default("ai")
+  status        String   @default("draft")
+  validatedAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model ResearchGap {
+  id          String   @id @default(cuid())
+  projectId   String
+  description String
+  rationale   String   @default("")
+  origin      String   @default("ai")
+  status      String   @default("draft")
+  validatedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Artefact {
+  id          String   @id @default(cuid())
+  projectId   String
+  type        String // service_blueprint | service_map
+  title       String
+  version     Int      @default(1)
+  content     String   @default("{}") // JSON BlueprintContent
+  origin      String   @default("manual")
+  status      String   @default("draft")
+  validatedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
