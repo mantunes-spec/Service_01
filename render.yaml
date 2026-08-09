@@ -6,6 +6,7 @@
 databases:
   - name: service01-db
     plan: free # Nota: o Postgres gratuito do Render expira após ~30 dias; para uso contínuo, subir de plano.
+    region: frankfurt # DEVE ser a mesma região do web service (ligação interna só resolve same-region).
 
 services:
   - type: web
