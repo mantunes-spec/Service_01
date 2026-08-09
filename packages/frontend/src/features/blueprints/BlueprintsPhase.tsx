@@ -3,16 +3,15 @@ import { useOutletContext } from 'react-router-dom';
 import type { Artefact, BlueprintContent } from 'shared';
 import type { ProjectContext } from '../../pages/ProjectLayout';
 import { api } from '../../lib/api';
+import { useToast } from '../../lib/toast';
+import { PhaseFooter } from '../../components/PhaseFooter';
+import { IconCheck, IconLayers, IconPlus, IconTrash } from '../../components/icons';
 
-/**
- * Fase 4 — Blueprints e mapas. Editor de swimlanes tradicionais
- * (fases × camadas). Estruturado para evoluir para navegação interativa depois.
- */
 export function BlueprintsPhase() {
   const { project, reload } = useOutletContext<ProjectContext>();
+  const toast = useToast();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   const artefacts = project.artefacts;
   const selected = artefacts.find((a) => a.id === selectedId) ?? null;
@@ -23,31 +22,32 @@ export function BlueprintsPhase() {
 
   const create = async () => {
     if (!title.trim()) return;
-    const a = await api.createArtefact(project.id, title.trim());
-    setTitle('');
-    await reload();
-    setSelectedId(a.id);
+    try {
+      const a = await api.createArtefact(project.id, title.trim());
+      setTitle('');
+      toast.ok('Blueprint criado');
+      await reload();
+      setSelectedId(a.id);
+    } catch (e) { toast.error(String(e)); }
   };
 
   return (
     <>
-      <h2>4 · Blueprints e mapas de serviço</h2>
-      <p className="muted">Swimlanes tradicionais: etapas da jornada × camadas do serviço.</p>
-      {error && <div className="error">{error}</div>}
-
       <div className="panel">
-        <div className="row wrap">
-          <input value={title} onChange={(e) => setTitle(e.target.value)}
-            placeholder="Título do novo blueprint" style={{ maxWidth: 340 }} />
-          <button className="primary" onClick={create} type="button">Novo blueprint</button>
+        <div className="panel__title"><IconLayers size={17} /><h3>Artefactos</h3></div>
+        <div className="row">
+          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)}
+            placeholder="Título do novo blueprint" style={{ maxWidth: 360 }}
+            onKeyDown={(e) => { if (e.key === 'Enter') create(); }} />
+          <button className="btn btn--primary" onClick={create} type="button"><IconPlus size={16} /> Novo</button>
         </div>
         {artefacts.length > 0 && (
-          <div className="row wrap" style={{ marginTop: '0.8rem' }}>
+          <div className="cluster" style={{ marginTop: '1rem' }}>
             {artefacts.map((a) => (
               <button key={a.id} type="button"
-                className={a.id === selectedId ? 'primary small' : 'small'}
+                className={a.id === selectedId ? 'btn btn--subtle btn--sm' : 'btn btn--ghost btn--sm'}
                 onClick={() => setSelectedId(a.id)}>
-                {a.title} {a.status === 'validated' ? '✓' : ''}
+                {a.title} {a.status === 'validated' && <IconCheck size={13} />}
               </button>
             ))}
           </div>
@@ -55,107 +55,85 @@ export function BlueprintsPhase() {
       </div>
 
       {selected ? (
-        <BlueprintEditor
-          key={selected.id}
-          artefact={selected}
-          onSaved={reload}
-          onError={setError}
-          projectId={project.id}
-        />
+        <BlueprintEditor key={selected.id} artefact={selected} projectId={project.id}
+          onSaved={reload} toast={toast} />
       ) : (
-        <div className="empty">Cria um blueprint para começar.</div>
+        <div className="empty mt-2">
+          <div className="empty__icon"><IconLayers /></div>
+          <div className="empty__title">Nenhum blueprint ainda</div>
+          <div>Cria o primeiro acima para desenhar o serviço em swimlanes.</div>
+        </div>
       )}
+
+      <PhaseFooter projectId={project.id} current="blueprints" />
     </>
   );
 }
 
 function BlueprintEditor({
-  artefact, projectId, onSaved, onError,
+  artefact, projectId, onSaved, toast,
 }: {
-  artefact: Artefact;
-  projectId: string;
-  onSaved: () => Promise<void>;
-  onError: (e: string) => void;
+  artefact: Artefact; projectId: string; onSaved: () => Promise<void>;
+  toast: { ok: (m: string) => void; error: (m: string) => void };
 }) {
   const [content, setContent] = useState<BlueprintContent>(artefact.content);
   const [dirty, setDirty] = useState(false);
 
   const update = (next: BlueprintContent) => { setContent(next); setDirty(true); };
 
-  const setCell = (laneIdx: number, stageIdx: number, value: string) => {
-    const lanes = content.lanes.map((l, li) =>
-      li === laneIdx ? { ...l, cells: l.cells.map((c, ci) => (ci === stageIdx ? value : c)) } : l,
-    );
-    update({ ...content, lanes });
-  };
-
-  const setStageName = (stageIdx: number, value: string) => {
-    const stages = content.stages.map((s, i) => (i === stageIdx ? value : s));
-    update({ ...content, stages });
-  };
-
-  const addStage = () => {
-    const stages = [...content.stages, `Etapa ${content.stages.length + 1}`];
-    const lanes = content.lanes.map((l) => ({ ...l, cells: [...l.cells, ''] }));
-    update({ stages, lanes });
-  };
-
-  const removeStage = (stageIdx: number) => {
+  const setCell = (li: number, ci: number, v: string) =>
+    update({ ...content, lanes: content.lanes.map((l, i) => i === li ? { ...l, cells: l.cells.map((c, j) => j === ci ? v : c) } : l) });
+  const setStage = (ci: number, v: string) =>
+    update({ ...content, stages: content.stages.map((s, i) => i === ci ? v : s) });
+  const addStage = () =>
+    update({ stages: [...content.stages, `Etapa ${content.stages.length + 1}`], lanes: content.lanes.map((l) => ({ ...l, cells: [...l.cells, ''] })) });
+  const removeStage = (ci: number) => {
     if (content.stages.length <= 1) return;
-    const stages = content.stages.filter((_, i) => i !== stageIdx);
-    const lanes = content.lanes.map((l) => ({ ...l, cells: l.cells.filter((_, i) => i !== stageIdx) }));
-    update({ stages, lanes });
+    update({ stages: content.stages.filter((_, i) => i !== ci), lanes: content.lanes.map((l) => ({ ...l, cells: l.cells.filter((_, i) => i !== ci) })) });
   };
 
   const save = async () => {
-    try {
-      await api.updateArtefact(projectId, artefact.id, { content });
-      setDirty(false);
-      await onSaved();
-    } catch (e) { onError(String(e)); }
+    try { await api.updateArtefact(projectId, artefact.id, { content }); setDirty(false); toast.ok('Blueprint guardado'); await onSaved(); }
+    catch (e) { toast.error(String(e)); }
   };
-
   const validate = async () => {
     try {
       if (dirty) await api.updateArtefact(projectId, artefact.id, { content });
-      await api.validateArtefact(projectId, artefact.id);
-      setDirty(false);
-      await onSaved();
-    } catch (e) { onError(String(e)); }
+      await api.validateArtefact(projectId, artefact.id); setDirty(false);
+      toast.ok('Blueprint validado'); await onSaved();
+    } catch (e) { toast.error(String(e)); }
   };
-
   const remove = async () => {
     if (!confirm('Eliminar este blueprint?')) return;
-    await api.deleteArtefact(projectId, artefact.id);
-    await onSaved();
+    await api.deleteArtefact(projectId, artefact.id); toast.ok('Blueprint eliminado'); await onSaved();
   };
 
   return (
-    <div className="panel">
-      <div className="spread">
-        <h3 style={{ margin: 0 }}>
-          {artefact.title}{' '}
-          <span className={`badge ${artefact.status}`}>{artefact.status === 'validated' ? 'validado' : 'rascunho'}</span>
-        </h3>
+    <div className="panel mt-1">
+      <div className="spread" style={{ marginBottom: '1rem' }}>
+        <div className="cluster" style={{ gap: '0.5rem' }}>
+          <h3>{artefact.title}</h3>
+          <span className={`pill pill--${artefact.status}`}>{artefact.status === 'validated' ? 'validado' : 'rascunho'}</span>
+          {dirty && <span className="pill pill--draft">alterações por guardar</span>}
+        </div>
         <div className="row">
-          <button className="small" onClick={addStage} type="button">+ Etapa</button>
-          <button className="small primary" onClick={save} disabled={!dirty} type="button">Guardar</button>
-          <button className="small" onClick={validate} type="button">Validar</button>
-          <button className="small danger" onClick={remove} type="button">Eliminar</button>
+          <button className="btn btn--sm" onClick={addStage} type="button"><IconPlus size={15} /> Etapa</button>
+          <button className="btn btn--primary btn--sm" onClick={save} disabled={!dirty} type="button">Guardar</button>
+          <button className="btn btn--subtle btn--sm" onClick={validate} type="button"><IconCheck size={15} /> Validar</button>
+          <button className="btn btn--ghost btn--icon" onClick={remove} type="button" title="Eliminar"><IconTrash size={16} /></button>
         </div>
       </div>
 
-      <div className="blueprint-scroll" style={{ marginTop: '0.8rem' }}>
-        <table className="blueprint">
+      <div className="bp-scroll">
+        <table className="bp">
           <thead>
             <tr>
-              <th style={{ width: 150 }}>Camada \ Etapa</th>
-              {content.stages.map((s, si) => (
-                <th key={si}>
+              <th className="corner">Camada / Etapa</th>
+              {content.stages.map((s, ci) => (
+                <th key={ci} className="stage-head">
                   <div className="row">
-                    <input value={s} onChange={(e) => setStageName(si, e.target.value)} />
-                    <button className="ghost small" title="Remover etapa"
-                      onClick={() => removeStage(si)} type="button">✕</button>
+                    <input className="input" value={s} onChange={(e) => setStage(ci, e.target.value)} />
+                    <button className="btn btn--ghost btn--icon" title="Remover etapa" onClick={() => removeStage(ci)} type="button">✕</button>
                   </div>
                 </th>
               ))}
@@ -166,8 +144,8 @@ function BlueprintEditor({
               <tr key={lane.key}>
                 <td className="lane-label">{lane.label}</td>
                 {lane.cells.map((cell, ci) => (
-                  <td key={ci}>
-                    <textarea value={cell} onChange={(e) => setCell(li, ci, e.target.value)} />
+                  <td key={ci} className="cell">
+                    <textarea value={cell} onChange={(e) => setCell(li, ci, e.target.value)} placeholder="…" />
                   </td>
                 ))}
               </tr>
@@ -175,7 +153,6 @@ function BlueprintEditor({
           </tbody>
         </table>
       </div>
-      {dirty && <p className="muted" style={{ marginTop: '0.5rem' }}>Alterações por guardar.</p>}
     </div>
   );
 }

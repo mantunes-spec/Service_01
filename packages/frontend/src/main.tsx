@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider, createBrowserRouter, Navigate } from 'react-router-dom';
 import './styles.css';
+import { ToastProvider } from './lib/toast';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ProjectLayout } from './pages/ProjectLayout';
 import { DefinitionPhase } from './features/definition/DefinitionPhase';
@@ -26,6 +27,8 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <ToastProvider>
+      <RouterProvider router={router} />
+    </ToastProvider>
   </React.StrictMode>,
 );
